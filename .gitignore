@@ -1,0 +1,6 @@
+.idea
+.env
+.env.backup
+data/*
+logs/*
+services/*

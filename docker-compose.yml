@@ -1,0 +1,44 @@
+version: "3"
+services:
+  # Gitlab
+  gitlab:
+    image: gitlab/gitlab-ce:${GITLAB_VERSION}
+    container_name: gitlab
+    ports:
+     - "${GITLAB_HOST_PORT}:80"
+     - "${GITLAB_SSH_PORT}:22"
+    environment:
+      GITLAB_SKIP_UNMIGRATED_DATA_CHECK: "true"
+      # Doc: https://docs.gitlab.com/ee/administration/environment_variables.html
+      # 由于 external_url 使用环境变量设置，因此需要指定nginx.listen_port
+      GITLAB_OMNIBUS_CONFIG: |
+        external_url "${GITLAB_EXTERNAL_URL}"
+        nginx['listen_port'] = "80"
+        gitlab_rails['gitlab_shell_ssh_port'] = "${GITLAB_SSH_PORT}"
+      TZ: ${TZ}
+    volumes:
+      - ${DATA_DIR}/gitlab:/var/opt/gitlab/:rw
+      - ${GITLAB_CONFIG}:/etc/gitlab/:rw
+      - ${LOG_DIR}/gitlab:/var/log/gitlab/:rw
+    networks:
+      - default
+
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab_runner
+    restart: always
+    privileged: true
+    environment:
+      TZ: ${TZ}
+    volumes:
+      - ${GITLAB_RUNNER_CONFIG}:/etc/gitlab-runner/:rw
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - default
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      driver: default
+
